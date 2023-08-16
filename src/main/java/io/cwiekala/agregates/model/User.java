@@ -7,6 +7,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Table(name = "users")
 @NoArgsConstructor
 public class User {
+
     @Id
     private UUID id;
 
@@ -36,6 +38,9 @@ public class User {
     @JoinColumn(name = "bid_id")
     private List<Auction> auctions;
 
+    @Version
+    private Integer version;
+
     @Builder
     public User(String name, Address address) {
         this.id = UUID.randomUUID();
@@ -45,16 +50,14 @@ public class User {
     }
 
     @Transactional
-    public Bid placeBid(Auction auction, BigDecimal money, Currency currency){
-
+    public Bid placeBid(Auction auction, BigDecimal money, Currency currency) {
         try {
             Thread.sleep(2000);
-        } catch (InterruptedException e) {
+            Bid bid = auction.placeBid(this, money, currency);
+            return bid;
+        } catch (Exception e) {
             throw new RuntimeException("Bid not placed!");
         }
-
-        Bid bid = auction.placeBid(this, money);
-        return bid;
     }
 
 }

@@ -1,12 +1,15 @@
 package io.cwiekala.agregates.model;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -30,13 +33,18 @@ public class Bid {
     private Currency currency;
 
     @ToString.Exclude
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
+//  IOT ->  @OneToMany(mappedBy = "datasource", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(name = "user_id")
     private User user;
     @ToString.Exclude
-    @ManyToOne
-    @JoinColumn(name = "auction_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "auction_id")
+    @JoinColumn(name = "auction_id", referencedColumnName = "id")
     private Auction auction;
+
+    @Version
+    private Integer version;
 
     @Builder
     public Bid(BigDecimal amount, User user, Auction auction) {
@@ -44,5 +52,6 @@ public class Bid {
         this.amount = amount;
         this.user = user;
         this.auction = auction;
+        this.currency = Currency.EURO;
     }
 }
