@@ -15,7 +15,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -38,6 +37,7 @@ public class Address {
     @Version
     private Integer version;
 
+    @Builder
     public Address(String flatNumber, String homeNumber, String street, String city, String postalCode) {
         this.id = UUID.randomUUID();
         this.flatNumber = flatNumber;

@@ -33,7 +33,6 @@ public class Auction {
 
     @ToString.Exclude
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "auction", cascade = CascadeType.ALL) // TODO: kaskady!
-//    @JoinColumn(name = "bid_id")
     private List<Bid> bids;
 
     @Version

@@ -16,6 +16,7 @@ import io.cwiekala.agregates.repository.UserRepository;
 import io.cwiekala.agregates.services.UserService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -44,52 +45,44 @@ class UserIT {
     @Autowired
     UserService userService;
 
-//    @Container
-//    private static PostgreSQLContainer postgresqlContainer = new PostgreSQLContainer()
-//        .withDatabaseName("foo")
-//        .withUsername("foo")
-//        .withPassword("secret");
-
-//    @DynamicPropertySource
-//    static void setProperties(DynamicPropertyRegistry registry) {
-//        registry.add("spring.datasource.url", postgresqlContainer::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgresqlContainer::getUsername);
-//        registry.add("spring.datasource.password", postgresqlContainer::getPassword);
-//    }
-//
-//    @Test
-//    void testDocker() {
-//        assertThat(postgresqlContainer.isRunning()).isEqualTo(true);
-//    }
-
     @Test
     @SneakyThrows
     @Transactional
-    void testSync() throws Exception {
+    void checkLockWhenUsersCompeteSync() throws Exception {
         // given
-        User user1 = new User("Tom", new Address("London"));
-        User user2 = new User("Dan", new Address("Paris"));
-        userRepository.save(user1);
-        userRepository.save(user2);
+        List<User> users = List.of(new User("User1", new Address("London")),
+            new User("User2", new Address("London")),
+            new User("User3", new Address("London")),
+            new User("User4", new Address("London")),
+            new User("User5", new Address("London")),
+            new User("User6", new Address("London")),
+            new User("User7", new Address("London")),
+            new User("User8", new Address("London")),
+            new User("User9", new Address("London")),
+            new User("User10", new Address("London")));
+
+        users.forEach(user ->
+            userRepository.save(user));
 
         Auction auction = Auction.builder()
             .title("Domain-Driven Design: Tackling Complexity in the Heart of Software").build();
 
         auctionRepository.save(auction);
 
-        // when - asynchronous calls
-        userService.placeBid(user1, auction, BigDecimal.valueOf(200L), EURO);
-        userService.placeBid(user2, auction, BigDecimal.valueOf(100L), EURO);
+        // when
+        users.forEach(user ->
+            userService.placeBid(user, auction, BigDecimal.valueOf(200L), EURO));
 
-        // then
-        List<Bid> all = bidRepository.findByAuctionId(auction.getId());
-        assertThat(all.size()).isEqualTo(2);
+        // then:
+        Auction auction1 = auctionRepository.getReferenceById(auction.getId());
+        List<Bid> all = bidRepository.findByAuctionId(auction1.getId());
+        assertThat(all.size()).isEqualTo(10);
     }
 
     @Test
     @SneakyThrows
     @Transactional
-    void testAsync() throws Exception {
+    void checkLockWhenUsersCompeteAsync() throws Exception {
         // given
         List<User> users = List.of(new User("User1", new Address("London")),
             new User("User2", new Address("London")),
@@ -135,4 +128,77 @@ class UserIT {
             });
     }
 
+    @Test
+    @SneakyThrows
+    @Transactional
+    void checkLockOnUnrelevantOperationsSync() throws Exception {
+        // given
+        User user1 = new User("User1", new Address("London"));
+        userRepository.save(user1);
+
+        Auction auction = Auction.builder()
+            .title("Domain-Driven Design: Tackling Complexity in the Heart of Software").build();
+
+        auctionRepository.save(auction);
+
+        // when
+        userService.placeBid(user1, auction, BigDecimal.valueOf(200L), EURO);
+        userService.changeUserAddress(user1, new Address("Warsaw"));
+
+        // then:
+        User user = userRepository.findById(user1.getId()).get();
+        Auction auction1 = auctionRepository.getReferenceById(auction.getId());
+        List<Bid> allAuctionBids = bidRepository.findByAuctionId(auction1.getId());
+        Optional<Bid> possibleBid = allAuctionBids.stream().filter(bid -> bid.getUser().getId() == user.getId())
+            .findFirst();
+
+        possibleBid.ifPresent(bid -> assertThat(bid.getAmount()).isEqualTo(BigDecimal.valueOf(200L)));
+        assertThat(possibleBid).isPresent();
+        assertThat(user.getAddress().getCity()).isEqualTo("Warsaw");
+    }
+
+    @Test
+    @SneakyThrows
+    @Transactional
+    void checkLockOnUnrelevantOperationsAsync() throws Exception {
+        // given
+        User user1 = new User("User1", new Address("London"));
+        userRepository.save(user1);
+
+        Auction auction = Auction.builder()
+            .title("Domain-Driven Design: Tackling Complexity in the Heart of Software").build();
+
+        auctionRepository.save(auction);
+
+        // when - asynchronous calls
+        final ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        executor.execute(() -> userService.placeBid(user1, auction, BigDecimal.valueOf(200L), EURO));
+        executor.execute(() -> userService.changeUserAddress(user1, new Address("Warsaw")));
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+
+         /*
+         then:
+          - ObjectOptimisticLockingFailureException
+          - DataIntegrityViolationException
+          - ConstraintViolationException
+          - JdbcSQLIntegrityConstraintViolationException
+          - StaleObjectStateException
+          */
+        await()
+            .atMost(Duration.TEN_SECONDS)
+            .untilAsserted(() -> {
+                User user = userRepository.findById(user1.getId()).get();
+                Auction auction1 = auctionRepository.getReferenceById(auction.getId());
+                List<Bid> allAuctionBids = bidRepository.findByAuctionId(auction1.getId());
+                Optional<Bid> possibleBid = allAuctionBids.stream().filter(bid -> bid.getUser().getId() == user.getId())
+                    .findFirst();
+
+                possibleBid.ifPresent(bid -> assertThat(bid.getAmount()).isEqualTo(BigDecimal.valueOf(200L)));
+                assertThat(possibleBid).isPresent();
+                assertThat(user.getAddress().getCity()).isEqualTo("Warsaw");
+            });
+    }
 }

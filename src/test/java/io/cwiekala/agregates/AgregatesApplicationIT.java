@@ -13,6 +13,7 @@ import io.cwiekala.agregates.repository.UserRepository;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -35,7 +36,7 @@ class AgregatesApplicationIT {
     @Test
     void testApplicationContext(){
         // given
-        Address address1 = Address.builder().id(UUID.randomUUID()).city("Warsaw").build();
+        Address address1 = Address.builder().city("Warsaw").build();
         addressRepository.save(address1);
 
         Auction auction1 = Auction.builder().build();
@@ -60,12 +61,12 @@ class AgregatesApplicationIT {
         assertThat(bids.size()).isEqualTo(1);
     }
 
-//    @AfterEach
-//    void clean(){
-//        addressRepository.deleteAll();
-//        userRepository.deleteAll();
-//        auctionRepository.deleteAll();
-//        bidRepository.deleteAll();
-//    }
+    @BeforeEach
+    void clean(){
+        addressRepository.deleteAll();
+        userRepository.deleteAll();
+        auctionRepository.deleteAll();
+        bidRepository.deleteAll();
+    }
 
 }
