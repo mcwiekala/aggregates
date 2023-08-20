@@ -34,9 +34,9 @@ public class Bid {
 
     @ToString.Exclude
     @ManyToOne(cascade = CascadeType.ALL)
-//  IOT ->  @OneToMany(mappedBy = "datasource", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     @JoinColumn(name = "user_id")
     private User user;
+
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
 //    @JoinColumn(name = "auction_id")

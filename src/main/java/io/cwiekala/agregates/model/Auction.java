@@ -5,8 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -35,6 +34,15 @@ public class Auction {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "auction", cascade = CascadeType.ALL) // TODO: kaskady!
     private List<Bid> bids;
 
+    @ToString.Exclude
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+//    @JoinColumn(name = "user_id", referencedColumnName = "id")
+//    @JoinTable(
+//        name = "_link",
+//        joinColumns = @JoinColumn(name = "user_id", updatable = false),
+//        inverseJoinColumns = @JoinColumn(name = "auction_id", updatable = false))
+    private List<User> users = new ArrayList<>();
+
     @Version
     private Integer version;
 
@@ -47,8 +55,16 @@ public class Auction {
 
     public Bid placeBid(User user, BigDecimal amount, Currency currency) {
         Bid bid = new Bid(amount, user, this);
+//        user.addMessage("Changed address", "Technical");
+        addUserToAuction(user);
+        user.addAuction(this);
         bids.add(bid);
         return bid;
+    }
+
+    private List<User> addUserToAuction(User user) {
+        users.add(user);
+        return users;
     }
 
 }
