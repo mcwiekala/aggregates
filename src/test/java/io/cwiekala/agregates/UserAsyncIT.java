@@ -89,15 +89,7 @@ class UserAsyncIT {
         }
         /**
          then:
-
-         caused by:
-         - ObjectOptimisticLockingFailureException
-         - DataIntegrityViolationException
-         - ConstraintViolationException
-         - JdbcSQLIntegrityConstraintViolationException
-         - StaleObjectStateException
-
-         Lock in: Auction table - because many users placing bids to this table!
+         Lock in Auction table - because many users placing bids to this table!
          */
         assertThat(exceptionWasThrown).isTrue();
     }
