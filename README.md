@@ -7,7 +7,7 @@ In this example, multiple unrelated scenarios involve various actors. However, O
  - many to one / one to many
  - many to many
 
-This process is straightforward to execute. However, it results in increasingly larger transactions. Consequently, the application's performance deteriorates, leading to numerous blocking issues that are very difficult to fix.
+This is very easy to achieve. However, it results in increasingly larger transactions. Consequently, the application's performance is degraded and leads to numerous blocking issues that are very difficult to fix.
 
 ![big-cluster-of-entities.png](docs%2Fbig-cluster-of-entities.png)
 
