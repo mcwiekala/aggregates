@@ -26,7 +26,7 @@ This project uses Docker and Postgres DB, because embedded H2 does not support p
 http://www.h2database.com/html/advanced.html#mvcc
 
 ## Lost Update anomaly
-
+Here is described this problem from the database perspective:
 ![lost-updates.png](docs%2Flost-updates.png)
 
 _image credits to [Vlad Mihalcea](https://vladmihalcea.com/a-beginners-guide-to-database-locking-and-the-lost-update-phenomena/)_
