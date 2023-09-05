@@ -15,9 +15,9 @@ This is very easy to achieve. However, it results in increasingly larger transac
 Problems are related to `ObjectOptimisticLockingFailureException` caused by `StaleObjectStateException`
 
  - **Synchronous operations** - Might happen in synchronous scenarios when there is stale object with old entity version number.
-[Chek this test.](src/test/java/io/cwiekala/agregates/UserSyncIT.java)
- - **Asynchronous operations** - concurrent changes with multiple users competing with each other. Changes are in the same table
-[Chek this test.](src/test/java/io/cwiekala/agregates/UserAsyncIT.java)
+[Check this test.](src/test/java/io/cwiekala/agregates/UserSyncIT.java)
+ - **Asynchronous operations** - scenario as above or concurrent changes with multiple users competing with each other. Changes are on the same table
+[Check this test.](src/test/java/io/cwiekala/agregates/UserAsyncIT.java)
 
 ## Database
 
