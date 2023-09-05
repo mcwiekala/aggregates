@@ -15,9 +15,9 @@ This process is straightforward to execute. However, it results in increasingly 
 `ObjectOptimisticLockingFailureException` caused by `StaleObjectStateException`
 
  - **Synchronous operations** - Might happen in synchronous scenarios when there is stale object with old entity version number.
-see:
- - **Asynchronous operations** - concurrent changes with multiple users competing with each other. Changes are in the same table 
-see:
+[Chek this test.](src/test/java/io/cwiekala/agregates/UserSyncIT.java)
+ - **Asynchronous operations** - concurrent changes with multiple users competing with each other. Changes are in the same table
+[Chek this test.](src/test/java/io/cwiekala/agregates/UserAsyncIT.java)
 
 ## Database
 
