@@ -12,7 +12,7 @@ This process is straightforward to execute. However, it results in increasingly 
 ![big-cluster-of-entities.png](docs%2Fbig-cluster-of-entities.png)
 
 
-`ObjectOptimisticLockingFailureException` caused by `StaleObjectStateException`
+Problems are related to `ObjectOptimisticLockingFailureException` caused by `StaleObjectStateException`
 
  - **Synchronous operations** - Might happen in synchronous scenarios when there is stale object with old entity version number.
 [Chek this test.](src/test/java/io/cwiekala/agregates/UserSyncIT.java)
