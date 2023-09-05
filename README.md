@@ -14,14 +14,14 @@ This is very easy to achieve. However, it results in increasingly larger transac
 
 Problems are related to `ObjectOptimisticLockingFailureException` caused by `StaleObjectStateException`
 
- - **Synchronous operations** - Might happen in synchronous scenarios when there is stale object with old entity version number.
+ - **Synchronous operations** - object on the client side is stale and then happens update
 [Check this test.](src/test/java/io/cwiekala/agregates/UserSyncIT.java)
- - **Asynchronous operations** - scenario as above or concurrent changes with multiple users competing with each other. Changes are on the same table
+ - **Asynchronous operations** - concurrent changes with multiple users competing with each other (changes are in the same table)
 [Check this test.](src/test/java/io/cwiekala/agregates/UserAsyncIT.java)
 
 ## Database
 
-This project uses docker and Postgres DB, because embedded H2 does not support parallel transactions
+This project uses Docker and Postgres DB, because embedded H2 does not support parallel transactions
 
 http://www.h2database.com/html/advanced.html#mvcc
 
