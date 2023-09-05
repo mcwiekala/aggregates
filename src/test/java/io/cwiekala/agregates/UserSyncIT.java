@@ -2,7 +2,7 @@ package io.cwiekala.agregates;
 
 import static io.cwiekala.agregates.model.Currency.EURO;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.cwiekala.agregates.model.Address;
 import io.cwiekala.agregates.model.Auction;
@@ -15,17 +15,12 @@ import io.cwiekala.agregates.repository.UserRepository;
 import io.cwiekala.agregates.services.UserService;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import lombok.SneakyThrows;
-import org.awaitility.Duration;
+import org.hibernate.StaleObjectStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @SpringBootTest
 class UserSyncIT {
@@ -46,8 +41,8 @@ class UserSyncIT {
     UserService userService;
 
     @Test
-    void checkLockWhenUsersCompeteSync() throws Exception {
-        // given
+    void checkLockWhenUsersCompeteSync() {
+        // given:
         List<User> users = List.of(new User("User1", new Address("London")),
             new User("User2", new Address("London")),
             new User("User3", new Address("London")),
@@ -67,7 +62,7 @@ class UserSyncIT {
 
         auctionRepository.save(auction);
 
-        // when
+        // when:
         users.forEach(user ->
             userService.placeBid(user.getId(), auction.getId(), BigDecimal.valueOf(200L), EURO));
 
@@ -79,7 +74,7 @@ class UserSyncIT {
 
     @Test
     void checkLockOnUnrelevantOperationsSync() throws Exception {
-        // given
+        // given:
         User user = new User("User1", new Address("London"));
         userRepository.save(user);
 
@@ -89,8 +84,10 @@ class UserSyncIT {
 
         // when:
         userService.changeUserAddress(user, new Address("Warsaw"));
-        userService.placeBid(user, auction, BigDecimal.valueOf(200L), EURO);
-
+        ObjectOptimisticLockingFailureException exception = assertThrows(ObjectOptimisticLockingFailureException.class, () -> {
+            userService.placeBid(user, auction, BigDecimal.valueOf(200L), EURO);
+        });
+        assertThat(exception.getCause().getClass()).isEqualTo(StaleObjectStateException.class);
         /**
             then: user lost auction because of exception
 
@@ -102,15 +99,6 @@ class UserSyncIT {
             - ObjectOptimisticLockingFailureException
             - StaleObjectStateException
          */
-        User userResult = userRepository.findById(user.getId()).get();
-        Auction auctionResult = auctionRepository.getReferenceById(auction.getId());
-        List<Bid> allAuctionBids = bidRepository.findByAuctionId(auctionResult.getId());
-        Optional<Bid> possibleBid = allAuctionBids.stream().filter(bid -> bid.getUser().getId() == userResult.getId())
-            .findFirst();
-
-        possibleBid.ifPresent(bid -> assertThat(bid.getAmount()).isEqualTo(BigDecimal.valueOf(200L)));
-        assertThat(possibleBid).isPresent();
-        assertThat(userResult.getAddress().getCity()).isEqualTo("Warsaw");
     }
 
     @BeforeEach

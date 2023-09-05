@@ -41,15 +41,10 @@ public class User {
     @OneToOne(cascade = CascadeType.ALL)
     private Address address;
 
-//        @Type(type = "io.cwiekala.agregates.model.Message")
-//    @Type(JsonType.class)
-//    @Column(columnDefinition = "jsonb")
-//    private List<Message> messages = new ArrayList<>();
-
     private String updated;
 
     @ToString.Exclude
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL) // TODO: kaskady!
+    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinTable(
         name = "_link",
         joinColumns = @JoinColumn(name = "user_id"),
@@ -58,11 +53,10 @@ public class User {
 
     @ToString.Exclude
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
-//    @JoinColumn(name = "user_id")
     private List<Favorite> favorites = new ArrayList<>();
 
     @ToString.Exclude
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL) // TODO: kaskady!
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
     private List<Bid> bids;
 
     @Version
@@ -76,29 +70,8 @@ public class User {
         this.auctionsInvolved = new ArrayList<>();
     }
 
-//    @Transactional
-//    public Bid placeBid(Auction auction, BigDecimal money, Currency currency) {
-//        try {
-//            Thread.sleep(2000);
-//            Bid bid = auction.placeBid(this, money, currency);
-//            return bid;
-//        } catch (Exception e) {
-//            throw new RuntimeException("Bid not placed!");
-//        }
-//    }
-
     List<Auction> addAuction(Auction auction) {
         auctionsInvolved.add(auction);
         return auctionsInvolved;
-    }
-
-//    List<Message> addMessage(String content, String role) {
-//        messages.add(new Message(content, role, Instant.now().toString()));
-//        return messages;
-//    }
-
-    public List<Favorite> addToFavorites(Favorite auction) {
-        favorites.add(auction);
-        return favorites;
     }
 }

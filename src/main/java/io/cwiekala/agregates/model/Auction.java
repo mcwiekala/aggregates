@@ -36,11 +36,6 @@ public class Auction {
 
     @ToString.Exclude
     @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-//    @JoinColumn(name = "user_id", referencedColumnName = "id")
-//    @JoinTable(
-//        name = "_link",
-//        joinColumns = @JoinColumn(name = "user_id", updatable = false),
-//        inverseJoinColumns = @JoinColumn(name = "auction_id", updatable = false))
     private List<User> users = new ArrayList<>();
 
     @Version
@@ -55,7 +50,6 @@ public class Auction {
 
     public Bid placeBid(User user, BigDecimal amount, Currency currency) {
         Bid bid = new Bid(amount, user, this);
-//        user.addMessage("Changed address", "Technical");
         addUserToAuction(user);
         user.addAuction(this);
         bids.add(bid);

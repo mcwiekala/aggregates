@@ -2,12 +2,9 @@ package io.cwiekala.agregates;
 
 import static io.cwiekala.agregates.model.Currency.EURO;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.cwiekala.agregates.model.Address;
 import io.cwiekala.agregates.model.Auction;
-import io.cwiekala.agregates.model.Bid;
 import io.cwiekala.agregates.model.User;
 import io.cwiekala.agregates.repository.AddressRepository;
 import io.cwiekala.agregates.repository.AuctionRepository;
@@ -15,19 +12,20 @@ import io.cwiekala.agregates.repository.BidRepository;
 import io.cwiekala.agregates.repository.UserRepository;
 import io.cwiekala.agregates.services.UserService;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import lombok.SneakyThrows;
-import org.awaitility.Duration;
+import org.hibernate.StaleObjectStateException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 @SpringBootTest
 class UserAsyncIT {
@@ -69,16 +67,26 @@ class UserAsyncIT {
             .title("Domain-Driven Design: Tackling Complexity in the Heart of Software").build();
         auctionRepository.save(auction);
 
-//        boolean actualTransactionActive = TransactionSynchronizationManager.isActualTransactionActive();
-//        System.out.println(actualTransactionActive);
-
         // when - 10 same asynchronous calls
         final ExecutorService executor = Executors.newFixedThreadPool(10);
 
+        List<Future> tasks = new ArrayList<>();
         users.parallelStream().forEach(user ->
-            executor.execute(() -> userService.placeBid(user.getId(), auction.getId(), BigDecimal.valueOf(200L), EURO)));
+            tasks.add(executor.submit(
+                () -> userService.placeBid(user.getId(), auction.getId(), BigDecimal.valueOf(200L), EURO))));
         executor.awaitTermination(10, TimeUnit.SECONDS);
 
+        Boolean exceptionWasThrown = false;
+        for (Future future : tasks) {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                ObjectOptimisticLockingFailureException exceptionCause = (ObjectOptimisticLockingFailureException) e.getCause();
+                assertThat(exceptionCause.getCause().getClass()).isEqualTo(StaleObjectStateException.class);
+                exceptionWasThrown = true;
+                System.out.println("--- EXCEPTION WAS THROWN ---");
+            }
+        }
         /**
          then:
 
@@ -91,13 +99,7 @@ class UserAsyncIT {
 
          Lock in: Auction table - because many users placing bids to this table!
          */
-        await()
-            .atMost(Duration.TEN_SECONDS.multiply(2))
-            .untilAsserted(() -> {
-                Auction auction1 = auctionRepository.getReferenceById(auction.getId());
-                List<Bid> all = bidRepository.findByAuctionId(auction1.getId());
-                assertThat(all.size()).isEqualTo(10);
-            });
+        assertThat(exceptionWasThrown).isTrue();
     }
 
     @Test
@@ -114,45 +116,41 @@ class UserAsyncIT {
         // when - 2 different asynchronous calls
         // placing bid is totally different operation than changing Address!
         final ExecutorService executor = Executors.newFixedThreadPool(10);
-        executor.execute(() -> userService.placeBid(user.getId(), auction.getId(), BigDecimal.valueOf(200L), EURO));
-        executor.execute(() -> userService.changeUserAddress(user.getId(), new Address("Warsaw")));
+        Future placeBidTask = executor.submit(() -> userService.placeBid(user.getId(), auction.getId(), BigDecimal.valueOf(200L), EURO));
+        Future changeUserAddressTask = executor.submit(() -> userService.changeUserAddress(user.getId(), new Address("Warsaw")));
         executor.awaitTermination(10, TimeUnit.SECONDS);
+        List<Future> tasks = List.of(placeBidTask, changeUserAddressTask);
+
+        Boolean exceptionWasThrown = false;
+        for (Future future : tasks) {
+            try {
+                future.get();
+            } catch (ExecutionException e) {
+                ObjectOptimisticLockingFailureException exceptionCause = (ObjectOptimisticLockingFailureException) e.getCause();
+                assertThat(exceptionCause.getCause().getClass()).isEqualTo(StaleObjectStateException.class);
+                exceptionWasThrown = true;
+                System.out.println("--- EXCEPTION WAS THROWN ---");
+            }
+        }
+
         /**
          then:
-
-         caused by:
-         - ObjectOptimisticLockingFailureException
-         - DataIntegrityViolationException
-         - ConstraintViolationException
-         - JdbcSQLIntegrityConstraintViolationException
-         - StaleObjectStateException
-
          Lock in: User table - because User table was changed 2 times!
          - foreign ID to new bid was added
          - message about changed Address was added
          */
-        await()
-            .atMost(Duration.TEN_SECONDS)
-            .untilAsserted(() -> {
-                User userResult = userRepository.findById(user.getId()).orElseThrow();
-                Auction auctionResult = auctionRepository.findById(auction.getId()).orElseThrow();
-
-                List<Bid> allAuctionBids = bidRepository.findByAuctionId(auctionResult.getId());
-                Optional<Bid> possibleBid = allAuctionBids.stream()
-                    .filter(bid -> bid.getUser().getId().equals(userResult.getId()))
-                    .findFirst();
-
-                possibleBid.ifPresent(bid -> assertThat(bid.getAmount()).hasToString("200.00"));
-                assertThat(possibleBid).isPresent();
-                assertThat(userResult.getAddress().getCity()).isEqualTo("Warsaw");
-            });
+        assertThat(exceptionWasThrown).isTrue();
     }
-
 
     @BeforeEach
     void clean() {
-        addressRepository.deleteAll();
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         userRepository.deleteAll();
+        addressRepository.deleteAll();
         auctionRepository.deleteAll();
         bidRepository.deleteAll();
     }

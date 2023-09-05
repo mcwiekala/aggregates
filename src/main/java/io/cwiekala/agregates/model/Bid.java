@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Version;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -38,8 +39,7 @@ public class Bid {
     private User user;
 
     @ToString.Exclude
-    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "auction_id")
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "auction_id", referencedColumnName = "id")
     private Auction auction;
 

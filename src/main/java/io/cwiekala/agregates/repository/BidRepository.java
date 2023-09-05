@@ -8,6 +8,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface BidRepository extends JpaRepository<Bid, UUID> {
 
     List<Bid> findByAuctionId(UUID auctionID);
-//    List<Bid> findByAuction(UUID auctionID);
 
 }

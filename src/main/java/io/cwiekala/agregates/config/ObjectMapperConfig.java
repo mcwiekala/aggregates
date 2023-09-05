@@ -1,4 +1,4 @@
-package io.cwiekala.agregates.model;
+package io.cwiekala.agregates.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.util.StdDateFormat;

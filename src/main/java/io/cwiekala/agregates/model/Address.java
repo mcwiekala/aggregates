@@ -29,9 +29,8 @@ public class Address {
     private String city;
     private String postalCode;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
     @PrimaryKeyJoinColumn()
-//    @JoinColumn(name = "user_id")
     private User user;
 
     @Version
