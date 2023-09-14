@@ -4,10 +4,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class aggregatesApplication {
+public class AggregatesApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(aggregatesApplication.class, args);
+        SpringApplication.run(AggregatesApplication.class, args);
     }
 
 }
