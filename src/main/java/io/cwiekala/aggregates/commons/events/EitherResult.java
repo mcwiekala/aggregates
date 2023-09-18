@@ -1,4 +1,4 @@
-package io.cwiekala.aggregates.utils;
+package io.cwiekala.aggregates.commons.events;
 
 import static io.vavr.control.Either.left;
 import static io.vavr.control.Either.right;

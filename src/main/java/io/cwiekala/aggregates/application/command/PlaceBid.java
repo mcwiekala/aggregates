@@ -1,4 +1,4 @@
-package io.cwiekala.aggregates.domain.auction.command;
+package io.cwiekala.aggregates.application.command;
 
 import io.cwiekala.aggregates.utils.Command;
 

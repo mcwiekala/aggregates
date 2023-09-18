@@ -8,8 +8,8 @@ class BidPublisher {
 
     Money maximumAmount;
 
-    BidWasPlaced handle(PlaceBid command) {
-        return BidWasPlaced.builder().build();
+    BidWasPlacedOLD handle(PlaceBid command) {
+        return BidWasPlacedOLD.builder().build();
     }
 
     // maxiumum amount

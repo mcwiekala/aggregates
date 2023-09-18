@@ -1,11 +1,11 @@
 package io.cwiekala.aggregates.domain.bid;
 
-import static io.cwiekala.aggregates.utils.EitherResult.announceFailure;
-import static io.cwiekala.aggregates.utils.EitherResult.announceSuccess;
+import static io.cwiekala.aggregates.commons.events.EitherResult.announceFailure;
+import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess;
 
+import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
 import io.cwiekala.aggregates.utils.AggregateRoot;
 import io.vavr.control.Either;
-import java.math.BigDecimal;
 import java.util.UUID;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
@@ -19,7 +19,7 @@ import org.javamoney.moneta.Money;
 public class Bid {
     // TODO: Either? ^^ - wtedy publisher w application!
 
-    BigDecimal amount;
+    Money amount;
 
 //    Money maximumAmount;
     public static final CurrencyUnit USD = Monetary.getCurrency("USD");
@@ -33,10 +33,10 @@ public class Bid {
 //        }
 //    }
 
-    public Either<BidPlacementFailure, BidWasPlaced> placeBid(Money money) {
+    public Either<BidPlacementFailure, BidWasPlacedOLD> placeBid(Money money) {
 //        return BidWasPlaced.builder().build();
         if(money != null){
-            return announceSuccess(BidWasPlaced.now(UUID.randomUUID()));
+            return announceSuccess(BidWasPlacedOLD.now(AuctionId.generate(), null));
         } else {
             return announceFailure(BidPlacementFailure.now(UUID.randomUUID()));
         }

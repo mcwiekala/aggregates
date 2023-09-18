@@ -1,4 +1,4 @@
-package io.cwiekala.aggregates.domain;
+package io.cwiekala.aggregates.commons.events;
 
 import java.time.Instant;
 import java.util.UUID;
