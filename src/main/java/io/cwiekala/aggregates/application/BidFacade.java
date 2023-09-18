@@ -1,6 +1,6 @@
 package io.cwiekala.aggregates.application;
 
-import io.cwiekala.aggregates.domain.bid.BidWasPlacedOLD;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.domain.bid.PlaceBid;
 import io.cwiekala.aggregates.utils.ApplicationService;
 
@@ -17,7 +17,7 @@ class BidFacade { // placingBid?
 //        bid.placeBid(Money.zero(Bid.USD));
     }
 
-    void handle(BidWasPlacedOLD event) {
+    void handle(BidWasPlaced event) {
         // handle event from different aggregate and do logic in Bid
 //        new Bid();
     }

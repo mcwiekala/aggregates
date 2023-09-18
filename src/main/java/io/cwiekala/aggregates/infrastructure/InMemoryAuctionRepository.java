@@ -17,6 +17,10 @@ public class InMemoryAuctionRepository implements AuctionRepository {
             .findFirst();
     }
 
+    public List<Auction> findAll() {
+        return List.copyOf(list);
+    }
+
     public Auction save(Auction auction) {
         list.add(auction);
         return auction;

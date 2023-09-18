@@ -1,6 +1,7 @@
 package io.cwiekala.aggregates.commons.events;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 public interface DomainEvent {
@@ -9,5 +10,5 @@ public interface DomainEvent {
 
     UUID getAggregateId();
 
-    Instant getWhen();
+    LocalDateTime getEventTime();
 }

@@ -4,6 +4,7 @@ import static io.cwiekala.aggregates.commons.events.EitherResult.announceFailure
 import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess;
 
 import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.utils.AggregateRoot;
 import io.vavr.control.Either;
 import java.util.UUID;
@@ -33,14 +34,14 @@ public class Bid {
 //        }
 //    }
 
-    public Either<BidPlacementFailure, BidWasPlacedOLD> placeBid(Money money) {
-//        return BidWasPlaced.builder().build();
-        if(money != null){
-            return announceSuccess(BidWasPlacedOLD.now(AuctionId.generate(), null));
-        } else {
-            return announceFailure(BidPlacementFailure.now(UUID.randomUUID()));
-        }
-    }
+//    public Either<BidPlacementFailure, BidWasPlaced> placeBid(Money money) {
+////        return BidWasPlaced.builder().build();
+//        if(money != null){
+//            return announceSuccess(BidWasPlaced.now(AuctionId.generate(), null));
+//        } else {
+//            return announceFailure(BidPlacementFailure.now(UUID.randomUUID()));
+//        }
+//    }
 
     // maxiumum amount
     // auctionerId

@@ -9,11 +9,11 @@ import static io.vavr.Patterns.$Right;
 
 import io.cwiekala.aggregates.commands.Result;
 import io.cwiekala.aggregates.domain.auction.Auction;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.domain.auction.AuctionRepository;
 import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
-import io.cwiekala.aggregates.domain.bid.BidPlacementFailure;
-import io.cwiekala.aggregates.domain.bid.BidWasPlacedOLD;
 import io.cwiekala.aggregates.utils.ApplicationService;
 import io.vavr.control.Either;
 import java.util.Optional;
@@ -26,16 +26,16 @@ public class AuctionFacade {
     private AuctionRepository auctionRepository;
 
     public Result createAuction(CreateAuctionCommand command) {
-        Auction newAuction = new Auction(command.getAuctionLength(), command.getSellerId(), command.getListingId(), command.getStartingPrice());
+        Auction newAuction = new Auction(command.getAuctionId(), command.getAuctionLength(), command.getSellerId(), command.getListingId(), command.getStartingPrice());
         auctionRepository.save(newAuction);
         return Success;
     }
 
     public Result handle(BidWasPlaced event) {
-        Optional<Auction> possibleAuction = auctionRepository.findById(event.auctionId());
-        if (possibleAuction.isEmpty()) {
+        Optional<Auction> possibleAuction = auctionRepository.findById(event.getAuctionId());
+        if (possibleAuction.isPresent()) {
             Auction auction = possibleAuction.get();
-            Either<BidPlacementFailure, BidWasPlacedOLD> result = auction.handle(event);
+            Either<BidPlacementFailure, AuctionEvent> result = auction.handle(event);
 
             return Match(result).of(
                 Case($Left($()), this::publishEvents),
@@ -49,12 +49,12 @@ public class AuctionFacade {
 
     private Result publishEvents(BidPlacementFailure placedOnHold) {
 //        patronRepository.publish(placedOnHold);
-        return Success;
+        return Result.Rejection;
     }
 
-    private Result publishEvents(BidWasPlacedOLD bookHoldFailed) {
+    private Result publishEvents(AuctionEvent auctionEvent) {
 //        patronRepository.publish(bookHoldFailed);
-        return Result.Rejection;
+        return Result.Success;
     }
 
 

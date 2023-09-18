@@ -2,59 +2,114 @@ package io.cwiekala.aggregates.domain.auction;
 
 import io.cwiekala.aggregates.commons.events.DomainEvent;
 import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
-import io.vavr.collection.List;
-import io.vavr.control.Option;
-import java.time.Instant;
+import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
+import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
 import org.javamoney.moneta.Money;
 
 public interface AuctionEvent extends DomainEvent {
 
-    default AuctionId auctionId() {
-        return new AuctionId(getAuctionId());
-    }
-
-    UUID getAuctionId();
+////    default AuctionId auctionId() {
+////        return new AuctionId(getAuctionId());
+////    }
+//
+    AuctionId getAuctionId();
 
     default UUID getAggregateId() {
-       return getAuctionId();
+        return getAuctionId().getValue();
     }
 
     @Value
     class AuctionCreated implements AuctionEvent {
+
         @NonNull UUID eventId = UUID.randomUUID();
-        @NonNull Instant when;
-        @NonNull UUID auctionId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull AuctionId auctionId;
+
         public static AuctionCreated now(AuctionId auctionId) {
-            return new AuctionCreated(Instant.now(), auctionId.getValue());
+            return new AuctionCreated(LocalDateTime.now(), auctionId);
         }
     }
 
     @Value
     class BidPlaceFailed implements AuctionEvent {
+
         @NonNull UUID eventId = UUID.randomUUID();
-        @NonNull Instant when;
-        @NonNull UUID auctionId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull AuctionId auctionId;
 
         public static BidPlaceFailed now(AuctionId auctionId) {
-            return new BidPlaceFailed(Instant.now(), auctionId.getValue());
+            return new BidPlaceFailed(LocalDateTime.now(), auctionId);
         }
     }
 
     @Value
+    @Builder
     class BidWasPlaced implements AuctionEvent {
-        @NonNull UUID eventId = UUID.randomUUID();
-        @NonNull Instant when;
-        @NonNull UUID auctionId;
-        @NonNull Money money;
 
-        public static BidWasPlaced now(AuctionId auctionId, Money money) {
-            return new BidWasPlaced(Instant.now(), auctionId.getValue(), money);
+        @NonNull UUID eventId = UUID.randomUUID();
+        @NonNull AuctionId auctionId;
+        @NonNull AuctioneerId auctioneerId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull Money newPrice;
+
+        public static BidWasPlaced now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
+            return new BidWasPlaced(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
         }
     }
 
+    @Value
+    @Builder
+    class WinningBidWasUpdated implements AuctionEvent {
+
+        @NonNull UUID eventId = UUID.randomUUID();
+        @NonNull AuctionId auctionId;
+        @NonNull AuctioneerId auctioneerId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull Money newPrice;
+
+        public static BidWasPlaced now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
+            return new BidWasPlaced(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
+        }
+    }
+
+    @Value
+    @Builder
+    class WinningBidWasChangedWithNewOne implements AuctionEvent {
+
+        @NonNull UUID eventId = UUID.randomUUID();
+        @NonNull AuctionId auctionId;
+        @NonNull AuctioneerId auctioneerId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull Money newPrice;
+
+        public static BidWasPlaced now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
+            return new BidWasPlaced(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
+        }
+    }
+
+    @Value
+        // TODO: Success/Failure Wrapper?
+    class BidPlacementFailure implements AuctionEvent {
+
+        @NonNull UUID eventId = UUID.randomUUID();
+        @NonNull AuctionId auctionId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull AuctioneerId auctioneerId; // TODO: to class ID?
+        @NonNull String reason;
+
+        public static BidPlacementFailure now(AuctionId auctionId, AuctioneerId auctioneerId, String reason) {
+            return new BidPlacementFailure(
+                auctionId, 
+                LocalDateTime.now(),
+                auctioneerId,
+                reason);
+        }
+
+    }
 
 }
 

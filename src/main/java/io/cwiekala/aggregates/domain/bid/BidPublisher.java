@@ -1,5 +1,6 @@
 package io.cwiekala.aggregates.domain.bid;
 
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.utils.AggregateRoot;
 import org.javamoney.moneta.Money;
 
@@ -8,8 +9,8 @@ class BidPublisher {
 
     Money maximumAmount;
 
-    BidWasPlacedOLD handle(PlaceBid command) {
-        return BidWasPlacedOLD.builder().build();
+    BidWasPlaced handle(PlaceBid command) {
+        return BidWasPlaced.builder().build();
     }
 
     // maxiumum amount
