@@ -7,16 +7,18 @@ import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasUpdated;
-import io.cwiekala.aggregates.utils.Entity;
+import io.cwiekala.aggregates.utils.comments.AuctionAggregate;
+import io.cwiekala.aggregates.utils.comments.Entity;
 import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.vavr.control.Either;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Value;
+import lombok.ToString;
 import org.javamoney.moneta.Money;
 
 @Entity
+@AuctionAggregate
+@ToString
 class WinningBid {
 
     private UUID id;
@@ -70,5 +72,9 @@ class WinningBid {
 
     Money getActualPrice() {
         return actualPrice;
+    }
+
+    Money getMaximumPrice() {
+        return maximumPrice;
     }
 }

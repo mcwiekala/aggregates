@@ -1,6 +1,6 @@
 package io.cwiekala.aggregates.domain.auction;
 
-import io.cwiekala.aggregates.utils.Entity;
+import io.cwiekala.aggregates.utils.comments.Entity;
 
 @Entity
 class ManualBid {

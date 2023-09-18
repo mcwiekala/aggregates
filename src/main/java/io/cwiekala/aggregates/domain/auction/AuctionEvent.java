@@ -3,6 +3,8 @@ package io.cwiekala.aggregates.domain.auction;
 import io.cwiekala.aggregates.commons.events.DomainEvent;
 import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
 import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
+import io.cwiekala.aggregates.utils.aggregateid.ListingId;
+import io.cwiekala.aggregates.utils.aggregateid.SellerId;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import lombok.Builder;
@@ -12,7 +14,7 @@ import org.javamoney.moneta.Money;
 
 public interface AuctionEvent extends DomainEvent {
 
-////    default AuctionId auctionId() {
+    ////    default AuctionId auctionId() {
 ////        return new AuctionId(getAuctionId());
 ////    }
 //
@@ -28,23 +30,25 @@ public interface AuctionEvent extends DomainEvent {
         @NonNull UUID eventId = UUID.randomUUID();
         @NonNull LocalDateTime eventTime;
         @NonNull AuctionId auctionId;
+        @NonNull ListingId listingId;
+        @NonNull SellerId sellerId;
 
-        public static AuctionCreated now(AuctionId auctionId) {
-            return new AuctionCreated(LocalDateTime.now(), auctionId);
+        public static AuctionCreated now(AuctionId auctionId, ListingId listingId, SellerId sellerId) {
+            return new AuctionCreated(LocalDateTime.now(), auctionId, listingId, sellerId);
         }
     }
 
-    @Value
-    class BidPlaceFailed implements AuctionEvent {
-
-        @NonNull UUID eventId = UUID.randomUUID();
-        @NonNull LocalDateTime eventTime;
-        @NonNull AuctionId auctionId;
-
-        public static BidPlaceFailed now(AuctionId auctionId) {
-            return new BidPlaceFailed(LocalDateTime.now(), auctionId);
-        }
-    }
+//    @Value
+//    class BidPlaceFailed implements AuctionEvent {
+//
+//        @NonNull UUID eventId = UUID.randomUUID();
+//        @NonNull LocalDateTime eventTime;
+//        @NonNull AuctionId auctionId;
+//
+//        public static BidPlaceFailed now(AuctionId auctionId) {
+//            return new BidPlaceFailed(LocalDateTime.now(), auctionId);
+//        }
+//    }
 
     @Value
     @Builder
@@ -103,7 +107,7 @@ public interface AuctionEvent extends DomainEvent {
 
         public static BidPlacementFailure now(AuctionId auctionId, AuctioneerId auctioneerId, String reason) {
             return new BidPlacementFailure(
-                auctionId, 
+                auctionId,
                 LocalDateTime.now(),
                 auctioneerId,
                 reason);

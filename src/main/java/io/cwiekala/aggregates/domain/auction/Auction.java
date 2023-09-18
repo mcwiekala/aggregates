@@ -1,21 +1,22 @@
 package io.cwiekala.aggregates.domain.auction;
 
 import static io.cwiekala.aggregates.commons.events.EitherResult.announceFailure;
+import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess;
 
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
 import io.cwiekala.aggregates.application.command.UpdateAuction;
-import io.cwiekala.aggregates.utils.AggregateRoot;
-import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
+import io.cwiekala.aggregates.utils.comments.AggregateRoot;
 import io.cwiekala.aggregates.utils.aggregateid.ListingId;
 import io.cwiekala.aggregates.utils.aggregateid.SellerId;
+import io.cwiekala.aggregates.utils.comments.AuctionAggregate;
 import io.vavr.control.Either;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import java.time.Duration;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +29,7 @@ import lombok.ToString;
 import org.javamoney.moneta.Money;
 
 @AggregateRoot
+@AuctionAggregate
 @Getter
 @ToString
 public class Auction {
@@ -39,8 +41,8 @@ public class Auction {
     ListingId listingId;
     SellerId sellerId;
     Money startingPrice;
-    WinningBid winningBid;
-    Optional<Money> minimalSellingPrice; // TODO??? AuctionConfiguration?
+    Optional<WinningBid> possibleWinningBid = Optional.empty();
+    Optional<Money> minimalSellingPrice = Optional.empty(); // TODO??? AuctionConfiguration?
 
     public Auction(AuctionId id, Duration auctionLength, SellerId sellerId, ListingId listingId, Money startingPrice) {
         this.id = id;
@@ -50,41 +52,49 @@ public class Auction {
         this.listingId = listingId;
         this.sellerId = sellerId;
         this.startingPrice = startingPrice;
-        this.minimalSellingPrice = Optional.empty();
     }
 
     // questions and answers?
 
-    public void handle(CreateAuctionCommand command) {
+    public void create(CreateAuctionCommand command) {
         //
     }
 
     public Either<BidPlacementFailure, AuctionEvent> handle(BidWasPlaced event) {
         // check end date
         LocalDateTime eventTime = event.getEventTime();
-        if (doesEventHappenWhenAuctionIsActive(eventTime)) { // TODO: atomic invariant
+        if (doesEventHappenWhenAuctionIsInactive(eventTime)) { // TODO: atomic invariant
             return announceFailure(
                 BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
                     "Bid was placed when the auction was inactive"));
-        }
-        if (isNewOfferGreaterThanStartingPrice(event)) {
-            winningBid = new WinningBid(startingPrice, event.getNewPrice(), event.getAuctioneerId(),
-                event.getEventTime());
         }
         if (minimalSellingPrice.isPresent()
             && event.getNewPrice().compareTo(minimalSellingPrice.get()) > 0) {
 
         }
-        return winningBid.processNewOffer(event);
+        if (possibleWinningBid.isEmpty()) {
+            if (isNewOfferGreaterThanStartingPrice(event)) {
+                WinningBid winningBid = new WinningBid(startingPrice, event.getNewPrice(), event.getAuctioneerId(),
+                    event.getEventTime());
+                possibleWinningBid = Optional.of(winningBid);
+                return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
+                    event.getNewPrice()));
+            }
+            return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
+                "Bid offer is lower than starting price"));
+        } else {
+            return possibleWinningBid.get().processNewOffer(event);
+        }
+//        return possibleWinningBid.processNewOffer(event);
     }
 
     private boolean isNewOfferGreaterThanStartingPrice(BidWasPlaced event) {
         return event.getNewPrice().compareTo(startingPrice) > 0;
     }
 
-    private boolean doesEventHappenWhenAuctionIsActive(LocalDateTime eventTime) {
-        return eventTime.isAfter(startDate)
-            && eventTime.isBefore(eventTime);
+    private boolean doesEventHappenWhenAuctionIsInactive(LocalDateTime eventTime) {
+        return !eventTime.isAfter(startDate)
+            || !eventTime.isBefore(endDate);
     }
 
     public void handle(UpdateAuction command) {
@@ -93,7 +103,13 @@ public class Auction {
     }
 
     public Money getActualPrice() {
-        return winningBid.getActualPrice();
+        return possibleWinningBid.map(WinningBid::getActualPrice)
+            .orElse(startingPrice);
+    }
+
+    public Money getMaximumPrice() {
+        return possibleWinningBid.map(WinningBid::getMaximumPrice)
+            .orElse(startingPrice);
     }
 
     @Embeddable

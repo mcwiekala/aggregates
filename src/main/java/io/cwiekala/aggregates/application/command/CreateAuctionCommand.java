@@ -1,9 +1,8 @@
 package io.cwiekala.aggregates.application.command;
 
 import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
-import io.cwiekala.aggregates.utils.Command;
+import io.cwiekala.aggregates.utils.comments.Command;
 import io.cwiekala.aggregates.utils.aggregateid.ListingId;
-import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.cwiekala.aggregates.utils.aggregateid.SellerId;
 import java.time.Duration;
 import lombok.AllArgsConstructor;

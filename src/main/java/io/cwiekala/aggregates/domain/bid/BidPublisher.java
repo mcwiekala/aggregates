@@ -1,7 +1,7 @@
 package io.cwiekala.aggregates.domain.bid;
 
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
-import io.cwiekala.aggregates.utils.AggregateRoot;
+import io.cwiekala.aggregates.utils.comments.AggregateRoot;
 import org.javamoney.moneta.Money;
 
 @AggregateRoot

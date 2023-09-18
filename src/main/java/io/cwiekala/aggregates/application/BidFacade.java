@@ -2,7 +2,7 @@ package io.cwiekala.aggregates.application;
 
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.domain.bid.PlaceBid;
-import io.cwiekala.aggregates.utils.ApplicationService;
+import io.cwiekala.aggregates.utils.comments.ApplicationService;
 
 @ApplicationService
 class BidFacade { // placingBid?

@@ -1,13 +1,6 @@
 package io.cwiekala.aggregates.domain.bid;
 
-import static io.cwiekala.aggregates.commons.events.EitherResult.announceFailure;
-import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess;
-
-import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
-import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
-import io.cwiekala.aggregates.utils.AggregateRoot;
-import io.vavr.control.Either;
-import java.util.UUID;
+import io.cwiekala.aggregates.utils.comments.AggregateRoot;
 import javax.money.CurrencyUnit;
 import javax.money.Monetary;
 import lombok.AllArgsConstructor;
