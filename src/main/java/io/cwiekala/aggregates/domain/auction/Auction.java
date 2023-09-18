@@ -8,6 +8,7 @@ import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
 import io.cwiekala.aggregates.application.command.UpdateAuction;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
+import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.cwiekala.aggregates.utils.comments.AggregateRoot;
 import io.cwiekala.aggregates.utils.aggregateid.ListingId;
 import io.cwiekala.aggregates.utils.aggregateid.SellerId;
@@ -110,6 +111,10 @@ public class Auction {
     public Money getMaximumPrice() {
         return possibleWinningBid.map(WinningBid::getMaximumPrice)
             .orElse(startingPrice);
+    }
+
+    public Optional<AuctioneerId> getWinningAuctioneerId() {
+        return possibleWinningBid.map(WinningBid::getAuctioneerId);
     }
 
     @Embeddable

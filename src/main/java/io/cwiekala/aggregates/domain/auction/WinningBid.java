@@ -7,17 +7,19 @@ import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasUpdated;
+import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.cwiekala.aggregates.utils.comments.AuctionAggregate;
 import io.cwiekala.aggregates.utils.comments.Entity;
-import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.vavr.control.Either;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import lombok.Getter;
 import lombok.ToString;
 import org.javamoney.moneta.Money;
 
 @Entity
 @AuctionAggregate
+@Getter
 @ToString
 class WinningBid {
 
@@ -37,11 +39,11 @@ class WinningBid {
     }
 
     boolean isGreaterThanActualPrice(Money newPrice) {
-        return actualPrice.compareTo(newPrice) > 0;
+        return newPrice.compareTo(actualPrice) > 0;
     }
 
     boolean isGreaterThanMaximumPrice(Money newPrice) {
-        return maximumPrice.compareTo(newPrice) > 0;
+        return newPrice.compareTo(maximumPrice) > 0;
     }
 
     Either<BidPlacementFailure, AuctionEvent> processNewOffer(BidWasPlaced event) {
@@ -49,17 +51,18 @@ class WinningBid {
 
         if (isGreaterThanMaximumPrice(newPrice)) {
             if (hasAuctionerAlreadyAWinningBid(event)) {
-                maximumPrice = event.getNewPrice();
+                maximumPrice = Money.from(event.getNewPrice());
                 return announceSuccess(
                     WinningBidWasUpdated.now(event.getAuctionId(), event.getAuctioneerId(), event.getNewPrice()));
             } else {
                 auctioneerId = event.getAuctioneerId();
-                actualPrice = maximumPrice;
+                actualPrice = Money.from(maximumPrice);
+                maximumPrice = Money.from(event.getNewPrice());
                 return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
                     event.getNewPrice()));
             }
         } else if (isGreaterThanActualPrice(newPrice)) {
-            actualPrice = newPrice;
+            actualPrice = Money.from(newPrice);
             return announceSuccess(
                 WinningBidWasUpdated.now(event.getAuctionId(), event.getAuctioneerId(), event.getNewPrice()));
         }

@@ -29,10 +29,11 @@ class AuctionTest {
     CurrencyUnit USD = Monetary.getCurrency("USD");
     Money $10 = Money.of(10, USD);
     Money $100 = Money.of(100, USD);
+    Money $120 = Money.of(120, USD);
 
 
-    private final AuctionRepository auctionRepository = new InMemoryAuctionRepository();
-    private final InMemoryEventPublisher eventPublisher = new InMemoryEventPublisher();
+    AuctionRepository auctionRepository = new InMemoryAuctionRepository();
+    InMemoryEventPublisher eventPublisher = new InMemoryEventPublisher();
     AuctionFacade auctionFacade = new AuctionFacade(auctionRepository, eventPublisher);
 
     @Test
@@ -60,15 +61,44 @@ class AuctionTest {
 
         List<Object> events = eventPublisher.getEvents();
         assertThat(events.size()).isEqualTo(2);
-
         EventChecker eventChecker = new EventChecker(events);
-        eventChecker.assertEvent(AuctionCreated.class);
-        eventChecker.assertEvent(BidWasPlaced.class);
+        eventChecker.assertEventAndPop(AuctionCreated.class);
+        eventChecker.assertEventAndPop(BidWasPlaced.class);
     }
 
     @Test
-    void bidAboveMaxBidWasPlaced() {
-        // winningBidWasChanged
+    void anotherBidWasPlaced() {
+        // given
+        Duration sevenDays = Duration.of(7, ChronoUnit.DAYS);
+        SellerId sellerId = SellerId.generate();
+        AuctioneerId auctioneerId = AuctioneerId.generate();
+        ListingId listingId = ListingId.generate();
+
+        CreateAuctionCommand createAuction = new CreateAuctionCommand(sevenDays, sellerId, listingId, $10);
+        auctionFacade.createAuction(createAuction);
+
+        BidWasPlaced bidWasPlaced = BidWasPlaced.now(createAuction.getAuctionId(), auctioneerId, $100);
+        auctionFacade.handle(bidWasPlaced);
+
+        // when:
+        AuctioneerId auctioneerTomId = AuctioneerId.generate();
+        BidWasPlaced tomsBidWasPlaced = BidWasPlaced.now(createAuction.getAuctionId(), auctioneerTomId, $120);
+        Result handleBidWasPlacedResult = auctionFacade.handle(tomsBidWasPlaced);
+
+        // then:
+        assertThat(handleBidWasPlacedResult).isEqualTo(Result.Success);
+
+        Auction resultAuction = auctionRepository.findById(createAuction.getAuctionId()).orElseThrow();
+        assertThat(resultAuction.getActualPrice()).isEqualTo($100);
+        assertThat(resultAuction.getMaximumPrice()).isEqualTo($120);
+        assertThat(resultAuction.getWinningAuctioneerId().orElseThrow()).isEqualTo(auctioneerTomId);
+
+        List<Object> events = eventPublisher.getEvents();
+        assertThat(events.size()).isEqualTo(3);
+        EventChecker eventChecker = new EventChecker(events);
+        eventChecker.assertEventAndPop(AuctionCreated.class);
+        eventChecker.assertEventAndPop(BidWasPlaced.class);
+        eventChecker.assertEventAndPop(BidWasPlaced.class);
     }
 
     @Test
@@ -99,9 +129,11 @@ class AuctionTest {
             this.events = events;
         }
 
-        private void assertEvent(Class clazz) {
+        private Object assertEventAndPop(Class clazz) {
             Optional<Object> foundEvent = events.stream().filter(event -> event.getClass().equals(clazz)).findAny();
             assertThat(foundEvent).isPresent();
+            events.remove(foundEvent.orElseThrow());
+            return foundEvent;
         }
     }
 }
