@@ -61,6 +61,8 @@ class WinningBid {
                 return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
                     event.getNewPrice()));
             }
+        } else if (hasAuctionerAlreadyAWinningBid(event)) {
+            return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "This used has already bid with higher maximum amount"));
         } else if (isGreaterThanActualPrice(newPrice)) {
             actualPrice = Money.from(newPrice);
             return announceSuccess(

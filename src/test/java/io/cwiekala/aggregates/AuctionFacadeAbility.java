@@ -17,7 +17,7 @@ public interface AuctionFacadeAbility {
 
     AuctionFacade auctionFacade = new AuctionFacade(AuctionRepositoryAbility.auctionRepository, EventsAbility.eventPublisher);
 
-    default AuctionId createAnAuctionWith100$Bid() {
+    default AuctionId thereIsAnAuctionWith100$Bid() {
         Duration sevenDays = Duration.of(7, ChronoUnit.DAYS);
         SellerId sellerId = SellerId.generate();
         AuctioneerId auctioneerId = AuctioneerId.generate();

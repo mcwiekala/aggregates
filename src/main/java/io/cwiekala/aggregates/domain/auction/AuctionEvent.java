@@ -63,6 +63,10 @@ public interface AuctionEvent extends DomainEvent {
         public static BidWasPlaced now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
             return new BidWasPlaced(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
         }
+
+        public static BidWasPlaced create(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice, LocalDateTime time) {
+            return new BidWasPlaced(auctionId, auctioneerId, time, newPrice);
+        }
     }
 
     @Value
