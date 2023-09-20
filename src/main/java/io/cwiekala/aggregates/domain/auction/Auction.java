@@ -19,6 +19,7 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.EmbeddedId;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -37,15 +38,17 @@ public class Auction {
 
     @EmbeddedId
     private AuctionId id;
-    LocalDateTime startDate;
-    LocalDateTime endDate;
-    ListingId listingId;
-    SellerId sellerId;
-    Money startingPrice;
-    Optional<WinningBid> possibleWinningBid = Optional.empty();
-    Optional<Money> minimalSellingPrice = Optional.empty(); // TODO??? AuctionConfiguration?
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
+    private ListingId listingId;
+    private SellerId sellerId;
+    private Money startingPrice;
+    private Optional<WinningBid> possibleWinningBid = Optional.empty();
+    private List<AuctionPolicy> auctionPolicies;
+    private Optional<Money> possibleMinimalSellingPrice = Optional.empty(); // TODO??? AuctionConfiguration? // policy
 
-    public Auction(AuctionId id, Duration auctionLength, SellerId sellerId, ListingId listingId, Money startingPrice) {
+    Auction(AuctionId id, Duration auctionLength, SellerId sellerId, ListingId listingId, Money startingPrice,
+        List<AuctionPolicy> auctionPolicies) {
         this.id = id;
         LocalDateTime now = LocalDateTime.now();
         this.startDate = now; // TODO: as params?
@@ -53,40 +56,32 @@ public class Auction {
         this.listingId = listingId;
         this.sellerId = sellerId;
         this.startingPrice = startingPrice;
-    }
-
-    // questions and answers?
-
-    public void create(CreateAuctionCommand command) {
-        //
+        this.auctionPolicies = auctionPolicies;
     }
 
     public Either<BidPlacementFailure, AuctionEvent> handle(BidWasPlaced event) {
-        // check end date
-        LocalDateTime eventTime = event.getEventTime();
-        if (doesEventHappenWhenAuctionIsInactive(eventTime)) { // TODO: atomic invariant
-            return announceFailure(
-                BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
-                    "Bid was placed when the auction was inactive"));
-        }
-        if (minimalSellingPrice.isPresent()
-            && event.getNewPrice().compareTo(minimalSellingPrice.get()) > 0) {
-
-        }
-        if (possibleWinningBid.isEmpty()) {
-            if (isNewOfferGreaterThanStartingPrice(event)) {
-                WinningBid winningBid = new WinningBid(startingPrice, event.getNewPrice(), event.getAuctioneerId(),
-                    event.getEventTime());
-                possibleWinningBid = Optional.of(winningBid);
-                return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
-                    event.getNewPrice()));
-            }
+        Optional<Rejection> rejection = canBidBePlaced(event);
+        if (rejection.isPresent()) {
             return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
-                "Bid offer is lower than starting price"));
-        } else {
-            return possibleWinningBid.get().processNewOffer(event);
+                rejection.get().getReason().getMessage()));
         }
-//        return possibleWinningBid.processNewOffer(event);
+        if (possibleWinningBid.isPresent()) {
+            return possibleWinningBid.get().processNewOffer(event);
+        } else {
+            WinningBid winningBid = new WinningBid(startingPrice, event.getNewPrice(), event.getAuctioneerId(),
+                event.getEventTime());
+            possibleWinningBid = Optional.of(winningBid);
+            return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
+                event.getNewPrice()));
+        }
+    }
+
+    private Optional<Rejection> canBidBePlaced(BidWasPlaced event) {
+        return auctionPolicies.stream()
+            .map(policy -> policy.apply(this, event))
+            .filter(Either::isLeft)
+            .findAny()
+            .map(Either::getLeft);
     }
 
     private boolean isNewOfferGreaterThanStartingPrice(BidWasPlaced event) {
@@ -96,11 +91,6 @@ public class Auction {
     private boolean doesEventHappenWhenAuctionIsInactive(LocalDateTime eventTime) {
         return !eventTime.isAfter(startDate)
             || !eventTime.isBefore(endDate);
-    }
-
-    public void handle(UpdateAuction command) {
-        // what can be updated?
-        // shipment type and payment can be only added
     }
 
     public Money getActualPrice() {

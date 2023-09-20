@@ -8,7 +8,7 @@ import static io.cwiekala.aggregates.AuctionFixture.$80;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
-import io.cwiekala.aggregates.commands.Result;
+import io.cwiekala.aggregates.commons.commands.Result;
 import io.cwiekala.aggregates.domain.auction.Auction;
 import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.AuctionCreated;

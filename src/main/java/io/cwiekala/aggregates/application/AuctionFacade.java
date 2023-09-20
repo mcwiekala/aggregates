@@ -1,18 +1,19 @@
 package io.cwiekala.aggregates.application;
 
-import static io.cwiekala.aggregates.commands.Result.Success;
+import static io.cwiekala.aggregates.domain.auction.AuctionPolicy.standardAuctionPolicies;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static io.vavr.Patterns.$Left;
 import static io.vavr.Patterns.$Right;
 
-import io.cwiekala.aggregates.commands.Result;
+import io.cwiekala.aggregates.commons.commands.Result;
 import io.cwiekala.aggregates.domain.auction.Auction;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.AuctionCreated;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
+import io.cwiekala.aggregates.domain.auction.AuctionFactory;
 import io.cwiekala.aggregates.domain.auction.AuctionRepository;
 import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
 import io.cwiekala.aggregates.utils.comments.ApplicationService;
@@ -23,14 +24,20 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 @ApplicationService
-@AllArgsConstructor
 public class AuctionFacade {
 
     private AuctionRepository auctionRepository;
     private ApplicationEventPublisher eventPublisher;
+    private AuctionFactory auctionFactory = new AuctionFactory();
+
+    public AuctionFacade(AuctionRepository auctionRepository, ApplicationEventPublisher eventPublisher) {
+        this.auctionRepository = auctionRepository;
+        this.eventPublisher = eventPublisher;
+    }
 
     public Result createAuction(CreateAuctionCommand command) {
-        Auction newAuction = new Auction(command.getAuctionId(), command.getAuctionLength(), command.getSellerId(), command.getListingId(), command.getStartingPrice());
+        Auction newAuction = auctionFactory.createAuction(command.getAuctionId(), command.getAuctionLength(), command.getSellerId(),
+            command.getListingId(), command.getStartingPrice());
         auctionRepository.save(newAuction);
         return publishEvents(AuctionCreated.now(command.getAuctionId(), command.getListingId(), command.getSellerId()));
     }
@@ -48,7 +55,8 @@ public class AuctionFacade {
                 Case($Right($()), this::publishEvents)
             );
         }
-        return publishEvents(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "Given auction not exists"));
+        return publishEvents(
+            BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "Given auction not exists"));
     }
 
     private Result publishEvents(BidPlacementFailure placedOnHold) {
@@ -60,6 +68,5 @@ public class AuctionFacade {
         eventPublisher.publishEvent(auctionEvent);
         return Result.Success;
     }
-
 
 }
