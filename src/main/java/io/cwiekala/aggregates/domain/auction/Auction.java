@@ -5,8 +5,6 @@ import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess
 
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
-import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
-import io.cwiekala.aggregates.application.command.UpdateAuction;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
 import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.cwiekala.aggregates.utils.comments.AggregateRoot;

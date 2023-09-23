@@ -48,100 +48,38 @@ public interface AuctionPolicy extends
         return Either.right(new Allowance());
     };
 
+    AuctionPolicy leadingAuctioneerCannotDecreaseTheBid = (Auction auction, BidWasPlaced cmd) -> {
+        if (auction.getPossibleWinningBid().isEmpty()) {
+            return Either.right(new Allowance());
+        }
+        WinningBid winningBid = auction.getPossibleWinningBid().get();
+        if (winningBid.getAuctioneerId().equals(cmd.getAuctioneerId())
+            && winningBid.getMaximumPrice().compareTo(cmd.getNewPrice()) >= 0) {
+            return Either.left(Rejection.withReason("This user has already bid with higher or equal maximum amount"));
+        }
+        return Either.right(new Allowance());
+    };
+
+    AuctionPolicy newBidMustBeGreaterThanActual = (Auction auction, BidWasPlaced cmd) -> {
+        if (auction.getPossibleWinningBid().isEmpty()) {
+            return Either.right(new Allowance());
+        }
+        WinningBid winningBid = auction.getPossibleWinningBid().get();
+        if (cmd.getNewPrice().compareTo(winningBid.getActualPrice()) <= 0) {
+            return Either.left(Rejection.withReason("Cannot place a bid with lower amount than the actual price"));
+        }
+
+        return Either.right(new Allowance());
+    };
+
     static List<AuctionPolicy> standardAuctionPolicies() {
         return List.of(bidCanBePlacedWhenAuctionIsActivePolicy,
             onlyBidAboveAuctionMinimalPriceCanWonPolicy,
-            firstOfferMustBeAboveStartingPricePolicy);
+            firstOfferMustBeAboveStartingPricePolicy,
+            leadingAuctioneerCannotDecreaseTheBid,
+            newBidMustBeGreaterThanActual
+        );
     }
-
-//    Either<BidPlacementFailure, AuctionEvent> processNewOffer(BidWasPlaced event) {
-//        Money newPrice = event.getNewPrice();
-//
-//        if (isGreaterThanMaximumPrice(newPrice)) {
-//            if (hasAuctionerAlreadyAWinningBid(event)) {
-//                maximumPrice = Money.from(event.getNewPrice());
-//                return announceSuccess(
-//                    WinningBidWasUpdated.now(event.getAuctionId(), event.getAuctioneerId(), event.getNewPrice()));
-//            } else {
-//                auctioneerId = event.getAuctioneerId();
-//                actualPrice = Money.from(maximumPrice);
-//                maximumPrice = Money.from(event.getNewPrice());
-//                return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
-//                    event.getNewPrice()));
-//            }
-//        } else if (hasAuctionerAlreadyAWinningBid(event)) {
-//            return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "This used has already bid with higher maximum amount"));
-//        } else if (isGreaterThanActualPrice(newPrice)) {
-//            actualPrice = Money.from(newPrice);
-//            return announceSuccess(
-//                WinningBidWasUpdated.now(event.getAuctionId(), event.getAuctioneerId(), event.getNewPrice()));
-//        }
-//        return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "Bid offer was too low!"));
-//    }
-
-//    private boolean isNewOfferGreaterThanStartingPrice(BidWasPlaced event) {
-//        return event.getNewPrice().compareTo(startingPrice) > 0;
-//    }
-//
-//    private boolean doesEventHappenWhenAuctionIsInactive(LocalDateTime eventTime) {
-//        return !eventTime.isAfter(startDate)
-//            || !eventTime.isBefore(endDate);
-//    }
-
-//    public Either<BidPlacementFailure, AuctionEvent> handle(BidWasPlaced event) {
-//        // check end date
-//        LocalDateTime eventTime = event.getEventTime();
-//        if (doesEventHappenWhenAuctionIsInactive(eventTime)) {
-//            return announceFailure(
-//                BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
-//                    "Bid was placed when the auction was inactive"));
-//        }
-//        if (minimalSellingPrice.isPresent()
-//            && event.getNewPrice().compareTo(minimalSellingPrice.get()) > 0) {
-//
-//        }
-//        if (possibleWinningBid.isEmpty()) {
-//            if (isNewOfferGreaterThanStartingPrice(event)) {
-//                WinningBid winningBid = new WinningBid(startingPrice, event.getNewPrice(), event.getAuctioneerId(),
-//                    event.getEventTime());
-//                possibleWinningBid = Optional.of(winningBid);
-//                return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
-//                    event.getNewPrice()));
-//            }
-//            return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(),
-//                "Bid offer is lower than starting price"));
-//        } else {
-//            return possibleWinningBid.get().processNewOffer(event);
-//        }
-//    }
-//
-//    private boolean isNewOfferGreaterThanStartingPrice(BidWasPlaced event) {
-//        return event.getNewPrice().compareTo(startingPrice) > 0;
-//    }
-//
-//    private boolean doesEventHappenWhenAuctionIsInactive(LocalDateTime eventTime) {
-//        return !eventTime.isAfter(startDate)
-//            || !eventTime.isBefore(endDate);
-//    }
-//
-//    public void handle(UpdateAuction command) {
-//        // what can be updated?
-//        // shipment type and payment can be only added
-//    }
-//
-//    public Money getActualPrice() {
-//        return possibleWinningBid.map(WinningBid::getActualPrice)
-//            .orElse(startingPrice);
-//    }
-//
-//    public Money getMaximumPrice() {
-//        return possibleWinningBid.map(WinningBid::getMaximumPrice)
-//            .orElse(startingPrice);
-//    }
-//
-//    public Optional<AuctioneerId> getWinningAuctioneerId() {
-//        return possibleWinningBid.map(WinningBid::getAuctioneerId);
-//    }
 }
 
 @Value

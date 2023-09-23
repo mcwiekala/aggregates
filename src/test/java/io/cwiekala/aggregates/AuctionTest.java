@@ -14,6 +14,8 @@ import io.cwiekala.aggregates.domain.auction.Auction.AuctionId;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.AuctionCreated;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.PlacedAmountIsNotGreaterThanActualMaximum;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasUpdated;
 import io.cwiekala.aggregates.utils.aggregateid.ListingId;
 import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
 import io.cwiekala.aggregates.utils.aggregateid.SellerId;
@@ -21,9 +23,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class AuctionTest implements AuctionFacadeAbility, EventsAbility, AuctionRepositoryAbility {
+
+    @BeforeEach
+    public void initEach(){
+        eventPublisher.cleanAll();
+    }
 
     @Test
     void bidAboveCurrentPriceWasPlaced() {
@@ -56,7 +64,7 @@ class AuctionTest implements AuctionFacadeAbility, EventsAbility, AuctionReposit
     }
 
     @Test
-    void anotherBidWasPlaced() {
+    void winningBidWasChanged() {
         // given:
         AuctionId auctionId = thereIsAnAuctionWith100$Bid();
 
@@ -82,7 +90,33 @@ class AuctionTest implements AuctionFacadeAbility, EventsAbility, AuctionReposit
     }
 
     @Test
-    void newBidWasPlaced() {
+    void newBidOfferWasLowerThanActualPrice() {
+        // given:
+        AuctionId auctionId = thereIsAnAuctionWith100$Bid();
+
+        // when:
+        AuctioneerId auctioneerTomId = AuctioneerId.generate();
+        BidWasPlaced tomsBidWasPlaced = BidWasPlaced.now(auctionId, auctioneerTomId, $5);
+        Result handleBidWasPlacedResult = auctionFacade.handle(tomsBidWasPlaced);
+
+        // then:
+        assertThat(handleBidWasPlacedResult).isEqualTo(Result.Rejection);
+
+        Auction resultAuction = auctionRepository.findById(auctionId).orElseThrow();
+        assertThat(resultAuction.getActualPrice()).isEqualTo($10);
+        assertThat(resultAuction.getMaximumPrice()).isEqualTo($100);
+        assertThat(resultAuction.getWinningAuctioneerId().orElseThrow()).isNotEqualTo(auctioneerTomId);
+
+        List<Object> events = eventPublisher.getEvents();
+        assertThat(events.size()).isEqualTo(3);
+        EventChecker eventChecker = new EventChecker(events);
+        eventChecker.assertEventAndPop(AuctionCreated.class);
+        eventChecker.assertEventAndPop(BidWasPlaced.class);
+        eventChecker.assertEventAndPop(BidPlacementFailure.class);
+    }
+
+    @Test
+    void newBidWasPlacedButTheLeaderNotChanged() {
         // given:
         AuctionId auctionId = thereIsAnAuctionWith100$Bid();
 
@@ -99,7 +133,7 @@ class AuctionTest implements AuctionFacadeAbility, EventsAbility, AuctionReposit
         assertThat(resultAuction.getMaximumPrice()).isEqualTo($100);
         assertThat(resultAuction.getWinningAuctioneerId().orElseThrow()).isNotEqualTo(auctioneerTomId);
 
-        assertThatBidEventsHappened();
+        assertThatEventsHappened(List.of(AuctionCreated.class, BidWasPlaced.class, PlacedAmountIsNotGreaterThanActualMaximum.class));
     }
 
     @Test
@@ -152,7 +186,7 @@ class AuctionTest implements AuctionFacadeAbility, EventsAbility, AuctionReposit
         assertThat(events.size()).isEqualTo(2);
         EventChecker eventChecker = new EventChecker(events);
         eventChecker.assertEventAndPop(BidWasPlaced.class);
-        eventChecker.assertEventAndPop(BidWasPlaced.class);
+        eventChecker.assertEventAndPop(WinningBidWasUpdated.class);
     }
 
     @Test

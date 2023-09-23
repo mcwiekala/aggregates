@@ -1,7 +1,6 @@
 package io.cwiekala.aggregates;
 
 import static io.cwiekala.aggregates.AuctionFixture.$10;
-import static io.cwiekala.aggregates.domain.auction.AuctionPolicy.standardAuctionPolicies;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.cwiekala.aggregates.domain.auction.Auction;

@@ -79,8 +79,23 @@ public interface AuctionEvent extends DomainEvent {
         @NonNull LocalDateTime eventTime;
         @NonNull Money newPrice;
 
-        public static BidWasPlaced now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
-            return new BidWasPlaced(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
+        public static WinningBidWasUpdated now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
+            return new WinningBidWasUpdated(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
+        }
+    }
+
+    @Value
+    @Builder
+    class PlacedAmountIsNotGreaterThanActualMaximum implements AuctionEvent {
+
+        @NonNull UUID eventId = UUID.randomUUID();
+        @NonNull AuctionId auctionId;
+        @NonNull AuctioneerId auctioneerId;
+        @NonNull LocalDateTime eventTime;
+        @NonNull Money newPrice;
+
+        public static PlacedAmountIsNotGreaterThanActualMaximum now(AuctionId auctionId, AuctioneerId auctioneerId, Money newPrice) {
+            return new PlacedAmountIsNotGreaterThanActualMaximum(auctionId, auctioneerId, LocalDateTime.now(), newPrice);
         }
     }
 

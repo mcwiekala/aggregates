@@ -11,6 +11,10 @@ interface EventsAbility {
 
     InMemoryEventPublisher eventPublisher = new InMemoryEventPublisher();
 
+    default void cleanAll(){
+        eventPublisher.cleanAll();
+    }
+
     default void assertThatBidEventsHappened() {
         List<Object> events = eventPublisher.getEvents();
         assertThat(events.size()).isEqualTo(3);
@@ -18,6 +22,13 @@ interface EventsAbility {
         eventChecker.assertEventAndPop(AuctionCreated.class);
         eventChecker.assertEventAndPop(BidWasPlaced.class);
         eventChecker.assertEventAndPop(BidWasPlaced.class);
+    }
+
+    default void assertThatEventsHappened(List<Class> expectedEvents) {
+        List<Object> events = eventPublisher.getEvents();
+        assertThat(events.size()).isEqualTo(expectedEvents.size());
+        EventChecker eventChecker = new EventChecker(events);
+        expectedEvents.stream().forEach(eventChecker::assertEventAndPop);
     }
 
 }

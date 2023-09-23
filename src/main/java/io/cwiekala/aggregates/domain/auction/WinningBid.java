@@ -5,6 +5,7 @@ import static io.cwiekala.aggregates.commons.events.EitherResult.announceSuccess
 
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidPlacementFailure;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.BidWasPlaced;
+import io.cwiekala.aggregates.domain.auction.AuctionEvent.PlacedAmountIsNotGreaterThanActualMaximum;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasChangedWithNewOne;
 import io.cwiekala.aggregates.domain.auction.AuctionEvent.WinningBidWasUpdated;
 import io.cwiekala.aggregates.utils.aggregateid.AuctioneerId;
@@ -12,6 +13,7 @@ import io.cwiekala.aggregates.utils.comments.AuctionAggregate;
 import io.cwiekala.aggregates.utils.comments.Entity;
 import io.vavr.control.Either;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.ToString;
@@ -30,6 +32,7 @@ class WinningBid {
     private Money maximumPrice;
     private AuctioneerId auctioneerId;
     private LocalDateTime bidDate;
+
     WinningBid(Money actualPrice, Money maximumPrice, AuctioneerId auctioneerId, LocalDateTime bidDate) {
         this.id = UUID.randomUUID();
         this.actualPrice = actualPrice;
@@ -48,7 +51,6 @@ class WinningBid {
 
     Either<BidPlacementFailure, AuctionEvent> processNewOffer(BidWasPlaced event) {
         Money newPrice = event.getNewPrice();
-
         if (isGreaterThanMaximumPrice(newPrice)) {
             if (hasAuctionerAlreadyAWinningBid(event)) {
                 maximumPrice = Money.from(event.getNewPrice());
@@ -61,14 +63,20 @@ class WinningBid {
                 return announceSuccess(WinningBidWasChangedWithNewOne.now(event.getAuctionId(), event.getAuctioneerId(),
                     event.getNewPrice()));
             }
-        } else if (hasAuctionerAlreadyAWinningBid(event)) {
-            return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "This used has already bid with higher maximum amount"));
-        } else if (isGreaterThanActualPrice(newPrice)) {
+        } else {
             actualPrice = Money.from(newPrice);
             return announceSuccess(
-                WinningBidWasUpdated.now(event.getAuctionId(), event.getAuctioneerId(), event.getNewPrice()));
+                PlacedAmountIsNotGreaterThanActualMaximum.now(event.getAuctionId(), event.getAuctioneerId(),
+                    event.getNewPrice()));
         }
-        return announceFailure(BidPlacementFailure.now(event.getAuctionId(), event.getAuctioneerId(), "Bid offer was too low!"));
+    }
+
+    private Optional<Rejection> canBidBePlaced(BidWasPlaced event) {
+        return WinningBidPolicy.standardWinningBidPolicies().stream()
+            .map(policy -> policy.apply(this, event))
+            .filter(Either::isLeft)
+            .findAny()
+            .map(Either::getLeft);
     }
 
     private boolean hasAuctionerAlreadyAWinningBid(BidWasPlaced event) {

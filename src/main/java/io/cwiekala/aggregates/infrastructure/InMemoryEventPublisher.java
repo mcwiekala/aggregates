@@ -20,4 +20,7 @@ public class InMemoryEventPublisher implements ApplicationEventPublisher {
         return events;
     }
 
+    public void cleanAll() {
+        events.clear();
+    }
 }

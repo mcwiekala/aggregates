@@ -1,6 +1,5 @@
 package io.cwiekala.aggregates.application;
 
-import static io.cwiekala.aggregates.domain.auction.AuctionPolicy.standardAuctionPolicies;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -19,7 +18,6 @@ import io.cwiekala.aggregates.application.command.CreateAuctionCommand;
 import io.cwiekala.aggregates.utils.comments.ApplicationService;
 import io.vavr.control.Either;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
